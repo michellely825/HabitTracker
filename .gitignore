@@ -1,0 +1,9 @@
+# VS Code specific settings and workspace history
+.vscode/
+
+# Python cache and environments (recap from earlier)
+__pycache__/
+*.pyc
+.venv/
+.env
+.DS_Store
