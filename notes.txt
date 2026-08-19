@@ -1,0 +1,28 @@
+how am i going to turn this empty folder into a backend project..
+
+Habit Tracker
+- single user (aka myself) for now...
+- CRUD operations
+    - create a new habit & save it to a db
+        - date created
+        - habit
+        - frequency (e.g. daily, weekly, biweekly) - maybe ill start with daily for everything to simplify...
+            ~ end date?
+        - current day's completion status -
+        - owner (will always be me...for now...but including to scale later)
+        - current streak - could be the <= longest streak
+        - longest streak so far - i think it makes sense to store this within the habit..
+    - update a habit
+        - edit habit contents
+        - mark as complete for today
+    - retrieve all habits
+    - retrieve the current streak of a habit
+    - retrieve the longest streak of a habit
+    - delete a habit
+
+user: michy
+
+michy's habits:
+    - stretch daily
+    - code daily
+
