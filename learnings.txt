@@ -1,0 +1,41 @@
+
+## Quick Definitions
+FastAPI = framework for building APIs (similar to Express in Node)
+framework = provides structural skeleton, handling routes, logic (calls my code when an endpoint is requested) and architecture
+Uvicorn = runs the server, imports/ and listens on specified port (similar to Node.js)
+
+
+## Backend logic
+
+main.py
+- builds app object that holds all routes
+- every decorator runs once at startup and registers the route to app (not everytime a req comes in)
+- the fx itself is not called yet until a request comes in
+- after whole file has been executed, uvicorn starts listening on port and waiting for incoming reqs
+- if i defined two routes with same path & method, FastAPI doesn't overwrite the first with second. instead it registers both
+  routes into the app obj and when a req comes in, it executes the first match
+
+## Virtual Environments
+- benefits
+    - avoids version clashes bc it isolate project's packages/dependencies so they don't conflict with other probjects
+    - helps with reproducability
+    - keeps computer clean bc packages get installed into isolated folder so prevents global clutter
+- creating a venv creates a folder of packages and small scripts inside venv/bin (such as activate)
+- these scripts have the exact absolute path baked into them via plain text
+- so if we manually rename the folder, the scripts will continue to point to old path which no longer exists -> problemo
+- lesson: don't rename a venv folder after creating, instead delete and recreate it
+ 
+
+## issues i ran accross
+- renamed my venv folder to .venv manually rather than deleting it and creating it fresh 
+  which caused my venv to break -> claude gave me a bunch of lines to run in my terminal
+  to rebuild it from scratch which looked like a bunch of broken words so i stopped and asked what each
+  line meant and what it was doing
+
+
+
+
+
+
+
+
