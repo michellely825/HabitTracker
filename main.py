@@ -4,11 +4,16 @@ from fastapi import FastAPI
 app = FastAPI()
 
 
+# TODO: should I move these routes into their own folders?
 @app.get("/")
 def root():
     return {"message": "welcome! habit tracker is alive"}
 
 
-@app.get("/habits")
-def get_habits():
-    return
+@app.post("/")
+def create_habit():
+    try:
+
+        return {"message": "habit successfully created!"}
+    except:
+        return {"message": "something went wrong!"}
