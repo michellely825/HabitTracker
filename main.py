@@ -2,11 +2,13 @@
 from fastapi import FastAPI, HTTPException
 from database import get_connection
 from pydantic import BaseModel, field_validator
+import psycopg2
 
 # creates an empty instance of FastAPI app which will hold all the routes
 app = FastAPI()
 
 
+# validates user payload data before anything else runs in the route
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -26,7 +28,8 @@ def root():
     return {"message": "welcome! habit tracker is alive"}
 
 
-@app.post("/users")
+# TODO: add real password hashing
+@app.post("/users", status_code=201)
 def create_user(user: UserCreate):
     username = user.username
     password = user.password
@@ -40,12 +43,22 @@ def create_user(user: UserCreate):
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already taken")
 
+        cursor.execute(
+            "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING user_id;",
+            (username, password),
+        )
+
+        new_user_id = cursor.fetchone()[
+            0
+        ]  # returns first value in tuple which was user_id
+        conn.commit()  # makes insert change permanent
+
         # if it's a SELECT: result = cursor.fetchone() or fetchall()
         # if it's an INSERT/UPDATE/DELETE: conn.commit()
 
-        return {}, 201
-    except someSpecificError as e:
-        return {"error": "unable to create new user"}, 400
+        return {"user_id": new_user_id, "username": username}, 201
+    except psycopg2.Error as e:
+        return {"error": "unable to create new user due to database error"}, 500
     finally:
         cursor.close()
         conn.close()
