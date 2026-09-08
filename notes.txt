@@ -4,10 +4,9 @@ while coding:
     - familiarize myself with browser dev tools
 
 - develop both schema and APIs together in like an initial "discovery" phase.
-- Take some time to think of "use cases", which are structured descriptions of what 
-a user wants from your system and the steps they take to get there. 
-- This is a good time to think of what the user might get if there is
-an error or if the user does something the system is not designed to
+- think of "use cases" aka what a user wants from your system,
+the steps they take to get there, and what the user will get if theres an
+error or if the user does something the system is not designed to
 do. As you write down these use cases, data points will come out 
 naturally in the descriptions and you'll start getting a lot better
 picture of how to structure your database

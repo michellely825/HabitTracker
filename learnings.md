@@ -2,6 +2,8 @@
 
 **FastAPI** = framework for building APIs (similar to Express in Node)
 
+**FastAPI route** = regular Python function with decorator (@app.get(...), @app.post(...)), so that FastAPI knows to call it when a matching request comes in
+
 **framework** = provides structural skeleton, handles routes, logic (calls my code for me when an endpoint is requested) and architecture
 
 **Uvicorn** = runs the server and listens on specified port (similar to Node.js)
@@ -18,9 +20,9 @@ Habit tracker
 - a user can:
   - create a user account
   - add a new habit
-  - see all their habits
-  - see a habit's current streak (could be <= longest streak)
-  - see a habit's longest streak
+  - get their habits
+  - get a habit's current streak (could be <= longest streak)
+  - get a habit's longest streak
   - mark a habit as completed for the day
   - unmark a habit
   - delete a habit
@@ -29,6 +31,21 @@ Habit tracker
   - access/update other user's habits
 
 ## Use Cases
+
+### Create a user account
+
+**main flow**
+
+1. User sends a POST/users request that includes a valid username and password
+2. BE verifies username is valid aka unique
+3. BE verifies password is valid aka at least 5 chars in length and contains at least one number
+4. BE hashes password and stores into DB
+5. BE returns newly created user as a user_id and username (not the hashed password bc security!)
+
+**errors/edge cases**
+
+- username already exists -> returns error
+- invalid username/password (e.g. null or empty) -> returns 400 error?
 
 ### Add a new habit:
 
@@ -73,6 +90,22 @@ Habit tracker
 - after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
 - let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first
   match
+
+## HTTP Status Codes
+
+- 200 OK: The request succeeded
+- 201 Created: The request succeeded and a new resource was created as a result
+- 202 Accepted: The request has been accepted for processing, but processing is not complete yet
+- 400 Bad Request: The server cannot process the request due to perceived client error (e.g., malformed request syntax)
+- 401 Unauthorized: The request lacks valid authentication credentials
+- 403 Forbidden: The server understands the request and the client identity is known, but the client does not have permission access rights
+- 404 Not Found: The server cannot find the requested resource
+- 422 Unprocessable Entity: more specific to "the request is structured correctly (valid JSON, right fields present), but a value inside it fails a validation rule" — e.g., password is too short, email isn't in a valid email format
+- 429 Too Many Requests: The user has sent too many requests in a given amount of time (rate-limiting)
+- 500 Internal Server Error: A generic error message when the server encounters an unexpected condition
+- 502 Bad Gateway: The server, while acting as a gateway or proxy, received an invalid response from the upstream server
+- 503 Service Unavailable: The server is currently unable to handle the request due to temporary overloading or maintenance
+- 504 Gateway Timeout: The server, while acting as a gateway or proxy, did not receive a timely response from the upstream server
 
 ## Virtual Environments
 
@@ -125,8 +158,16 @@ db in venv
   two verification checks - confirms both paths match
 
 - syntax issue: using single vs double quotes in psql
+
   - single quotes is a string literal
   - double quotes is an identifier (e.g. a column, table name, etc)
+
+- cursor is undefined error
+  - Every time a route needs to talk to the database, it needs its own fresh connection and cursor, created inside that route's function — created and creating a cursor doesn't happen once for your whole app; it happens per-request, inside whatever function is handling that specific request.
+  - Connection vs. Cursor
+    - Connection (conn) — represents the actual open "line" between your Python program and the Postgres server. Think of it like picking up a phone and dialing — you're now linked to the database, but you haven't said anything yet. Opening a connection is a relatively "expensive" operation (it takes a moment to establish), so you typically open one connection and reuse it for multiple operations, rather than reconnecting for every single query.
+    - Cursor (cursor) — created from an open connection, and it's what actually lets you execute commands and retrieve results. Continuing the phone analogy: the connection is the open phone line, and the cursor is you actually speaking into it — sending a specific request ("run this query") and listening for the response.
+  - why this error? This comes down to your choice not to use an ORM (a decision you made deliberately, remember) — you're using the "raw" driver, which means you're doing the low-level work yourself (open connection, create cursor, execute, fetch, close) instead of a library doing it invisibly for you. If you had used SQLAlchemy (the Postgres equivalent of Mongoose, roughly) — you'd similarly set up a connection once.
 
 ## What can go wrong when...
 
@@ -143,7 +184,12 @@ db in venv
 - recommended me to use ORM; rather than just defaulting to use what it suggested I asked it wto list what the tradeoffs were
   - ORM (e.g., SQLAlchemy): less boilerplate, built-in SQL injection protection, easier migrations but hides the actual SQL, adds a new abstraction to learn, and can generate inefficient queries I don't immediately see
   - Raw SQL (e.g., psycopg2): full transparency into exactly what queries run, reinforces SQL skills directly, no new abstraction to learn but more manual work per query, manual connection handling, and no automatic migration tooling
-- Decision: decided to go with raw SQL because I want to practice writing queries and know exactly what's happening
+- Decision: decided to go with raw SQL because I want to practice writing queries and know exactly what's happening; allows me to see the actual mechanics that every ORM is secretly doing on your behalf aka understanding why a connection and cursor are needed per-request; also this way makes learning an ORM later much faster bc once I eventually do pick up SQLAlchemy (or go back to Mongoose/similar), I'll understand what it's actually doing for me, rather than treating it as magic. I'll recognize "oh, this ORM is just doing the connection/cursor dance I already know, behind a nicer interface"
+
+## DRY
+
+- common software principle sometimes called "don't repeat yourself" (DRY)
+- implemented with get_connection fx that every route calls
 
 ## Next steps?
 
@@ -180,6 +226,21 @@ db in venv
 - completions table
   - habit_id INT NOT NULL FOREIGN KEY
   - completion_date DATE DEFAULT CURRENT_DATE
+
+## Tradeoffs
+
+- Checking uniqueness of username
+  - Options
+    - Approach #1: Check first, then insert (what I originally was thinking)
+      - Query: "does a user with this username already exist?"
+      - If yes → return an error, stop here
+      - If no → proceed to insert the new user
+    - Approach 2: Just try to insert, and catch the failure
+      - Attempt the insert directly
+      - If the UNIQUE constraint on the DB rejects it (throws an error), catch that error in your code and translate it into a friendly "username already taken" response
+      - If it succeeds, great — no separate check needed
+  - intuitively Approach 1 makes more sense to me logically **ask Victor**
+  - But AI said Approach 2 is actually often preferred in real systems, because Approach 1 has a subtle flaw: between your "check" and your "insert," a tiny window exists where another request could sneak in and create that same username — so relying only on the check isn't airtight. The database's UNIQUE constraint is the actual, guaranteed source of truth; your own check-first query is more of a nicety for a faster/friendlier error, not a substitute for it.
 
 ## Command line/Postgres
 
