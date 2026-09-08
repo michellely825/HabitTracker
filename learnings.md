@@ -8,12 +8,15 @@
 
 **schema** = defines db organization, how tables relate and what rules the data must follow
 
+**psycopg2** = library that allows python to talk to postgreSQL db
+
 ## Project Overview
 
 Habit tracker
 
 - for now supports a single use (aka myself) but can/will eventually support multiple users
 - a user can:
+  - create a user account
   - add a new habit
   - see all their habits
   - see a habit's current streak (could be <= longest streak)
@@ -25,13 +28,51 @@ Habit tracker
   - update contents of a habit -> bc if they could, it would cause problems later on when calculating streaks?
   - access/update other user's habits
 
+## Use Cases
+
+### Add a new habit:
+
+**main flow**
+
+1. User sends a POST/habits request to create a new habit by supplying content
+2. BE validates the request, ensuring content is not empty or null (could it be null?)
+3. BE saves the new habit into DB, associated with the user
+4. BE returns the newly created habit as a habit_id and date_created
+
+**error/edge cases**
+
+- what happens if habit content is invalid (e.g. empty or null) -> return an error (e.g. "missing habit content") instead of saving a blank habit
+- what if the habit content is really long? -> DB restricts content limit via VARCHAR(255)
+- what if DB fails to write (e.g. network issues etc) -> return an error (e.g. "Network issue, please try again later") instead of silently pretending it worked
+- saving habit to wrong user due to missing token/invalid token? -> BE should reject request
+- can user create two habits with same content? -> no, DB requires habits to be unique
+
+### See all habits
+
+**main flow**
+
+1. User sends a GET/habits request along with token that has user id, user also specifies if they want to see complete habits only, incomplete habits only or both
+2. BE filters DB for user specific habits
+3. BE returns list of habits which will include their habit_id, content, date_created
+
+**errors/edge cases**
+
+- missing token/invalid token? -> return an error
+- missing habit type filter (complete only, incomplete only etc) -> return all habits
+- invalid habit type filter -> reject with an error
+- network issues -> return an error instead of silently pretending it worked
+- BE returns all habits regardless of user -> issue with querying the DB or potentially issue with the way habits are getting saved
+- what happens if user has thousands of habits? -> implement pagination so that not all of them are returned at once?
+- what happens if user has no habits? -> return empty list
+
 ## Backend logic
 
 - my main.py file builds the app object which holds all routes
 - every decorator runs once at startup and registers the route to app (not everytime a request comes in)
 - the fx itself is not called yet until a request comes in
 - after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
-- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first match
+- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first
+  match
 
 ## Virtual Environments
 
@@ -83,8 +124,15 @@ db in venv
 
   two verification checks - confirms both paths match
 
+- syntax issue: using single vs double quotes in psql
+  - single quotes is a string literal
+  - double quotes is an identifier (e.g. a column, table name, etc)
+
 ## What can go wrong when...
 
+- creating a new user
+  - username is not unique -> this is enforced by the db schema via UNIQUE
+  - manually include the user_id -> enforced by schema via "GENERATED ALWAYS AS IDENTITY" which makes postgres auto generate it and also spits out an error if we try to override/provide a user_id
 - creating a habit:
   - habit doesn't get saved properly to db bc of network errors? db errors?
   - new habit is missing required fields so shouldn't be saved
@@ -101,6 +149,9 @@ db in venv
 
 - set up my DB
 - think through table schema
+- create user table first
+- sanity check/validate schema design in psql terminal by inserting new users into table; making sure ids auto generate, usernames have to be unique etc.
+- then test python to postgres connection
 
 ## DB Schema
 
@@ -118,11 +169,11 @@ db in venv
 ## Approach #2 Schema design / data modeling notes
 
 - users table (must create this table first so habit table can reference it; will only hold one row aka me for now)
-  - user_id INT PRIMARY KEY AUTO_INCREMENT
+  - user_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY -> postgres auto generates/populates
   - username VARCHAR(50) NOT NULL UNIQUE
   - password_hash VARCHAR(255) NOT NULL
-- habit table
-  - habit_id INT PRIMARY KEY AUTO_INCREMENT
+- habits table
+  - habit_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY
   - content TEXT NOT NULL
   - date_created DATE DEFAULT CURRENT_DATE -----> auto populates; user does not need to enter
   - user_id INT NOT NULL FOREIGN KEY
@@ -130,13 +181,19 @@ db in venv
   - habit_id INT NOT NULL FOREIGN KEY
   - completion_date DATE DEFAULT CURRENT_DATE
 
-## General Command line
+## Command line/Postgres
 
-start server: `uvicorn main:app --reload`
+- start server: `uvicorn main:app --reload`
 
-connect to postgres server, specifically pointed to postgres db:
-`psql postgres
+- connect to postgres server, specifically pointed to postgres db:
+  `psql postgres
 `
 
-switch to diff db:
-`\c {db_name}`
+- switch to diff db:
+  `\c {db_name}`
+
+- see a list of tables in the db: `\dt`
+
+- When psql shows -# instead of =#, it means it's waiting for more lines/statements
+- `quit` or `\q` to exit out of psql completely
+- `Ctrl+C` to quit out of writing a statement and go back to a fresh prompt =#

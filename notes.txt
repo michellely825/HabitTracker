@@ -2,3 +2,18 @@ while coding:
     - consider what can go wrong (intentionally and unintentionally) on client and server side
     - think about how your system would behave in those situations
     - familiarize myself with browser dev tools
+
+- develop both schema and APIs together in like an initial "discovery" phase.
+- Take some time to think of "use cases", which are structured descriptions of what 
+a user wants from your system and the steps they take to get there. 
+- This is a good time to think of what the user might get if there is
+an error or if the user does something the system is not designed to
+do. As you write down these use cases, data points will come out 
+naturally in the descriptions and you'll start getting a lot better
+picture of how to structure your database
+- From a database design perspective, the only thing I can think of
+that might snag you later if you don't think about it now is deciding
+if any of your data should be historical. As in, is there any data 
+important to habit tracking that once created should not be updated, 
+only read. Updating a record should never be at the cost of losing 
+important historical data.

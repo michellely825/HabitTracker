@@ -10,6 +10,12 @@ def root():
     return {"message": "welcome! habit tracker is alive"}
 
 
+@app.post("/users")
+def create_user():
+
+    return
+
+
 @app.post("/")
 def create_habit():
     try:
