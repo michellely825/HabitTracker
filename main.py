@@ -1,11 +1,24 @@
 # TODO: should I move routes into their own folders?
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from pydantic import BaseModel, field_validator
 import psycopg2
 
 # creates an empty instance of FastAPI app which will hold all the routes
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allows requests from any origin (fine for local dev)
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def root():
+    return {"message": "welcome! habit tracker is alive"}
 
 
 # validates user payload data before anything else runs in the route
@@ -21,11 +34,6 @@ class UserCreate(BaseModel):
         if not any(char.isdigit() for char in value):
             raise ValueError("password must contain at least one digit")
         return value
-
-
-@app.get("/")
-def root():
-    return {"message": "welcome! habit tracker is alive"}
 
 
 # TODO: add real password hashing
@@ -50,13 +58,10 @@ def create_user(user: UserCreate):
 
         new_user_id = cursor.fetchone()[
             0
-        ]  # returns first value in tuple which was user_id
+        ]  # returns first value in tuple which is user_id
         conn.commit()  # makes insert change permanent
 
-        # if it's a SELECT: result = cursor.fetchone() or fetchall()
-        # if it's an INSERT/UPDATE/DELETE: conn.commit()
-
-        return {"user_id": new_user_id, "username": username}, 201
+        return {"user_id": new_user_id, "username": username}
     except psycopg2.Error as e:
         return {"error": "unable to create new user due to database error"}, 500
     finally:

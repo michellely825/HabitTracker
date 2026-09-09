@@ -1,3 +1,7 @@
+# if it's a SELECT: result = cursor.fetchone() or fetchall()
+
+# if it's an INSERT/UPDATE/DELETE: conn.commit()
+
 ## Quick Definitions
 
 **FastAPI** = framework for building APIs (similar to Express in Node)
@@ -30,67 +34,6 @@ Habit tracker
   - update contents of a habit -> bc if they could, it would cause problems later on when calculating streaks?
   - access/update other user's habits
 
-## Use Cases
-
-### Create a user account
-
-**main flow**
-
-1. User sends a POST/users request that includes a valid username and password
-2. BE verifies username is valid aka unique
-3. BE verifies password is valid aka at least 5 chars in length and contains at least one number
-4. BE hashes password and stores into DB
-5. BE returns newly created user as a user_id and username (not the hashed password bc security!)
-
-**errors/edge cases**
-
-- username already exists -> returns error
-- invalid username/password (e.g. null or empty) -> returns 400 error?
-
-### Add a new habit:
-
-**main flow**
-
-1. User sends a POST/habits request to create a new habit by supplying content
-2. BE validates the request, ensuring content is not empty or null (could it be null?)
-3. BE saves the new habit into DB, associated with the user
-4. BE returns the newly created habit as a habit_id and date_created
-
-**error/edge cases**
-
-- what happens if habit content is invalid (e.g. empty or null) -> return an error (e.g. "missing habit content") instead of saving a blank habit
-- what if the habit content is really long? -> DB restricts content limit via VARCHAR(255)
-- what if DB fails to write (e.g. network issues etc) -> return an error (e.g. "Network issue, please try again later") instead of silently pretending it worked
-- saving habit to wrong user due to missing token/invalid token? -> BE should reject request
-- can user create two habits with same content? -> no, DB requires habits to be unique
-
-### See all habits
-
-**main flow**
-
-1. User sends a GET/habits request along with token that has user id, user also specifies if they want to see complete habits only, incomplete habits only or both
-2. BE filters DB for user specific habits
-3. BE returns list of habits which will include their habit_id, content, date_created
-
-**errors/edge cases**
-
-- missing token/invalid token? -> return an error
-- missing habit type filter (complete only, incomplete only etc) -> return all habits
-- invalid habit type filter -> reject with an error
-- network issues -> return an error instead of silently pretending it worked
-- BE returns all habits regardless of user -> issue with querying the DB or potentially issue with the way habits are getting saved
-- what happens if user has thousands of habits? -> implement pagination so that not all of them are returned at once?
-- what happens if user has no habits? -> return empty list
-
-## Backend logic
-
-- my main.py file builds the app object which holds all routes
-- every decorator runs once at startup and registers the route to app (not everytime a request comes in)
-- the fx itself is not called yet until a request comes in
-- after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
-- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first
-  match
-
 ## HTTP Status Codes
 
 - 200 OK: The request succeeded
@@ -106,6 +49,15 @@ Habit tracker
 - 502 Bad Gateway: The server, while acting as a gateway or proxy, received an invalid response from the upstream server
 - 503 Service Unavailable: The server is currently unable to handle the request due to temporary overloading or maintenance
 - 504 Gateway Timeout: The server, while acting as a gateway or proxy, did not receive a timely response from the upstream server
+
+## Backend logic
+
+- my main.py file builds the app object which holds all routes
+- every decorator runs once at startup and registers the route to app (not everytime a request comes in)
+- the fx itself is not called yet until a request comes in
+- after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
+- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first
+  match
 
 ## Virtual Environments
 
@@ -168,6 +120,27 @@ db in venv
     - Connection (conn) — represents the actual open "line" between your Python program and the Postgres server. Think of it like picking up a phone and dialing — you're now linked to the database, but you haven't said anything yet. Opening a connection is a relatively "expensive" operation (it takes a moment to establish), so you typically open one connection and reuse it for multiple operations, rather than reconnecting for every single query.
     - Cursor (cursor) — created from an open connection, and it's what actually lets you execute commands and retrieve results. Continuing the phone analogy: the connection is the open phone line, and the cursor is you actually speaking into it — sending a specific request ("run this query") and listening for the response.
   - why this error? This comes down to your choice not to use an ORM (a decision you made deliberately, remember) — you're using the "raw" driver, which means you're doing the low-level work yourself (open connection, create cursor, execute, fetch, close) instead of a library doing it invisibly for you. If you had used SQLAlchemy (the Postgres equivalent of Mongoose, roughly) — you'd similarly set up a connection once.
+- CORS policy
+  - tried using fetch() request to POST/users endpoint from about:blank origin and came across CORS policy error
+    - about:blank's origin is treated as "null" (string null) and bc its origin doesn't match
+  - CORS policy: built in browser security that prevents clients from different origins to make requests to APIs aka requires that the frontend and backend be on same origin or an authorized origin in order for them to talk to each other
+  - origin: the combination of protocol + domain + port (e.g. http://localhost:3000, http://localhost:8000)
+  - a browser will only let JavaScript on a webpage make a request to a different origin if that origin (the server) explicitly says "I allow requests from you."
+  - possible solutions suggested by AIs
+    - allow_origins=["*"]
+      - real tradeoff, not a non-issue You're right to be suspicious
+      - The scenario this protects against, that "\*" removes: imagine some totally unrelated, potentially malicious website exists somewhere on the internet. Without CORS restrictions, JavaScript running on that malicious site could make requests to your API directly from a visitor's browser — and if a visitor happens to be logged into your app in that same browser (with cookies/session tokens), the malicious site's JavaScript could piggyback on that logged-in session to make requests as if they were the real user — reading their data, or performing actions on their behalf, without them knowing
+      - Why "_" is still commonly used for local dev, and considered lower-risk there: your API isn't deployed publicly — it's only reachable on your own machine (localhost), so no random external malicious website can actually reach it in the first place, regardless of your CORS setting. The risk "_" introduces really only matters once your API is deployed somewhere publicly reachable on the internet.
+      - "_" is a reasonable convenience for local-only development, but a genuine risk if left in place once an app is deployed publicly. Worth explicitly noting in your learnings.md: "used allow_origins=[\"_\"] for local dev; must replace with actual frontend origin before any real deployment."
+      - Your API isn't publicly reachable — it only runs on localhost, meaning only processes on your own machine can even reach it. No random external website's JavaScript can access localhost:8000 on someone else's computer — they'd need to be running code on your machine specifically, which is a much narrower risk than a publicly deployed API.
+      - There's no real user data at stake yet — you're the only user, with test/placeholder data, not real credentials or sensitive information.
+      - The purpose right now is learning/testing, not securing a production system — optimizing for "unblock myself and keep learning" is the right tradeoff at this stage.
+    - explicitly listing only the specific origin(s) you trust, so random other websites' JavaScript can't successfully make authorized cross-origin requests to your API.
+
+## Security notes
+
+- Currently using `allow_origins=["*"]` for CORS since this is local-only, solo dev/testing.
+- MUST replace with specific allowed origin(s) before any public deployment.
 
 ## What can go wrong when...
 
@@ -227,7 +200,7 @@ db in venv
   - habit_id INT NOT NULL FOREIGN KEY
   - completion_date DATE DEFAULT CURRENT_DATE
 
-## Tradeoffs
+## Design Decisions/Tradeoffs
 
 - Checking uniqueness of username
   - Options
@@ -241,6 +214,10 @@ db in venv
       - If it succeeds, great — no separate check needed
   - intuitively Approach 1 makes more sense to me logically **ask Victor**
   - But AI said Approach 2 is actually often preferred in real systems, because Approach 1 has a subtle flaw: between your "check" and your "insert," a tiny window exists where another request could sneak in and create that same username — so relying only on the check isn't airtight. The database's UNIQUE constraint is the actual, guaranteed source of truth; your own check-first query is more of a nicety for a faster/friendlier error, not a substitute for it.
+
+## Browser Dev Tools
+
+- fetch(): built in js fx provided by the browser that is specifically designed for making HTTP reqs
 
 ## Command line/Postgres
 
