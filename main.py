@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from pydantic import BaseModel, field_validator
 import psycopg2
+import jwt
 
 # creates an empty instance of FastAPI app which will hold all the routes
 app = FastAPI()
@@ -21,7 +22,8 @@ def root():
     return {"message": "welcome! habit tracker is alive"}
 
 
-# validates user payload data before anything else runs in the route
+# Pydantic model that auto validates user payload data before anything else runs in the POST/users route
+# provides automatic 422 error for missing/incorrect-typed fields
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -34,6 +36,11 @@ class UserCreate(BaseModel):
         if not any(char.isdigit() for char in value):
             raise ValueError("password must contain at least one digit")
         return value
+
+
+class HabitCreate(BaseModel):
+    content: str
+    user_id: int
 
 
 # TODO: add real password hashing
@@ -56,10 +63,8 @@ def create_user(user: UserCreate):
             (username, password),
         )
 
-        new_user_id = cursor.fetchone()[
-            0
-        ]  # returns first value in tuple which is user_id
-        conn.commit()  # makes insert change permanent
+        new_user_id = cursor.fetchone()[0]  # returns first val in tuple aka user_id
+        conn.commit()  # makes insert SQL statement permanent
 
         return {"user_id": new_user_id, "username": username}
     except psycopg2.Error as e:
