@@ -1,10 +1,15 @@
-# TODO: should I move routes into their own folders?
+# TODO: move routes into their own folders?
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from pydantic import BaseModel, field_validator
+from dotenv import load_dotenv
+import os
 import psycopg2
 import jwt
+
+load_dotenv()
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 # creates an empty instance of FastAPI app which will hold all the routes
 app = FastAPI()

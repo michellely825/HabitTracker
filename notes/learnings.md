@@ -27,6 +27,8 @@
 
 **pyjwt** = library for creating and verifying JWTs for authenticating users
 
+**dotenv** = library to load .env files in python
+
 ## Project Overview
 
 Habit tracker
@@ -213,3 +215,5 @@ db in venv
 - When psql shows -# instead of =#, it means it's waiting for more lines/statements
 - `quit` or `\q` to exit out of psql completely
 - `Ctrl+C` to quit out of writing a statement and go back to a fresh prompt =#
+- regenerate requirements.txt to capture all newly installed dependencies: `pip3 freeze > requirements.txt`
+- generate a secret key as a one off command in terminal: `pip3 freeze > requirements.txt`
