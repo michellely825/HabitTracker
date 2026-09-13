@@ -1,13 +1,13 @@
 ## Next steps?
 
 - [x] set up my DB
-- [x] think through table schema
 - [x] create user table first
-- [x] sanity check/validate schema design in psql terminal by inserting new users into table; making sure ids auto generate, usernames have to be unique etc.
+- [x] validate schema design in psql terminal by inserting new users into table, making sure ids auto generate, usernames have to be unique etc.
 - [x] test python to postgres connection via POST/users
 - [x] create habits table
-- [x] sanity check schema in psql terminal
-- []
+- [x] validate check habits schema in psql terminal
+- [x] set up JWT auth
+- [x]
 
 ## Quick Definitions
 
@@ -149,6 +149,12 @@ db in venv
     - option 2: explicitly list only the specific origin(s) I trust
       - prevents random sites from making authorized cross-origin requests to my API
       - more restrictive which requires me to actually know and maintain the list of allowed origins which may require a bit of ongoing configuration as my setup changes (e.g. different port for a future frontend)
+- pytest not being able to locate my auth.py file to import the fx I am trying to test
+  - error msg: `ImportError while importing test module '/Users/michellely/Desktop/habit_tracker/tests/test_auth.py'.  ModuleNotFoundError: No module named 'auth'`
+  - why? bc pytest does't know where my home/root dir is
+  - AI initially recommended to fix by creating an empty conftest.py file which essentially tells pytest where the root dir is
+  - I pushed back because I didn't like the idea of having an empty file to clutter up my root dir since it seems like a waste of space and so I asked for alt options
+  - AI suggested instead of running `pytest` to use `python3 -m pytest` which runs pytest as a module via python itself and tells pytest directly where my project root is (still don't fullyyy understand this well but it worked..lol)
 
 ## Security
 
@@ -217,3 +223,4 @@ db in venv
 - `Ctrl+C` to quit out of writing a statement and go back to a fresh prompt =#
 - regenerate requirements.txt to capture all newly installed dependencies: `pip3 freeze > requirements.txt`
 - generate a secret key as a one off command in terminal: `pip3 freeze > requirements.txt`
+- run pytest: `python3 -m pytest`
