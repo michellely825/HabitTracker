@@ -1,0 +1,62 @@
+# Command Line & CLI Reference
+
+A quick-reference guide for running the local server, interacting with the database, and managing Python dependencies.
+
+## Python & Project Commands
+
+- start server: `uvicorn main:app --reload`
+- run tests: `python3 -m pytest`
+- regenerate requirements.txt to capture all newly installed dependencies: `pip3 freeze > requirements.txt`
+- generate a secret key as a one off command in terminal (one-off): `pip3 freeze > requirements.txt`
+
+## PostgreSQL (`psql`) Commands
+
+- connect to postgres server, specifically pointed to postgres db:
+  `psql postgres`
+- switch to diff db:
+  `\c {db_name}`
+- see a list of tables in the db: `\dt`
+- `quit` or `\q` to exit out of psql completely
+- `Ctrl+C` to instantly kill the current multi-line statement and return to a fresh `=#` prompt.
+
+### Psql Terminal Tips
+
+- When psql shows -# instead of =#, it means it's waiting for more lines/statements
+
+# Quick Definitions
+
+**FastAPI** = framework for building APIs (similar to Express in Node)
+
+**FastAPI route** = regular Python function with decorator (@app.get(...), @app.post(...)), so that FastAPI knows to call it when a matching request comes in
+
+**framework** = provides structural skeleton, handles routes, logic (calls my code for me when an endpoint is requested) and architecture
+
+**Uvicorn** = runs the server and listens on specified port (similar to Node.js)
+
+**schema** = defines db organization, how tables relate and what rules the data must follow
+
+**psycopg2** = library that allows python to talk to postgreSQL db
+
+**pydantic** = library for data validation and parsing using type hints; powers the BaseModel classes
+
+**pyjwt** = library for creating and verifying JWTs for authenticating users
+
+**dotenv** = library to load .env files in python
+
+**requirements.txt** = equivalent to package.json for node aka lists dependencies and their versions for reproducibility purposes
+
+# HTTP Status Codes
+
+- 200 OK: The request succeeded
+- 201 Created: The request succeeded and a new resource was created as a result
+- 202 Accepted: The request has been accepted for processing, but processing is not complete yet
+- 400 Bad Request: The server cannot process the request due to perceived client error (e.g., malformed request syntax)
+- 401 Unauthorized: The request lacks valid authentication credentials
+- 403 Forbidden: The server understands the request and the client identity is known, but the client does not have permission access rights
+- 404 Not Found: The server cannot find the requested resource
+- 422 Unprocessable Entity: more specific to "the request is structured correctly (valid JSON, right fields present), but a value inside it fails a validation rule" — e.g., password is too short, email isn't in a valid email format
+- 429 Too Many Requests: The user has sent too many requests in a given amount of time (rate-limiting)
+- 500 Internal Server Error: A generic error message when the server encounters an unexpected condition
+- 502 Bad Gateway: The server, while acting as a gateway or proxy, received an invalid response from the upstream server
+- 503 Service Unavailable: The server is currently unable to handle the request due to temporary overloading or maintenance
+- 504 Gateway Timeout: The server, while acting as a gateway or proxy, did not receive a timely response from the upstream server

@@ -1,12 +1,16 @@
-# TODO: move routes into their own folders?
+# TODO: move routes into their own folders
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
+from auth import hash_password
 from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
-import os
+
 import psycopg2
+import bcrypt
 import jwt
+import os
 
 load_dotenv()
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -48,7 +52,12 @@ class HabitCreate(BaseModel):
     user_id: int
 
 
-# TODO: add real password hashing
+@app.post("/logins")
+def login(user: UserCreate):
+    username = user.username
+    password = user.password
+
+
 @app.post("/users", status_code=201)
 def create_user(user: UserCreate):
     username = user.username
@@ -63,9 +72,11 @@ def create_user(user: UserCreate):
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already taken")
 
+        hashed_password = hash_password(password)
+
         cursor.execute(
             "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING user_id;",
-            (username, password),
+            (username, hashed_password),
         )
 
         new_user_id = cursor.fetchone()[0]  # returns first val in tuple aka user_id
@@ -79,10 +90,16 @@ def create_user(user: UserCreate):
         conn.close()
 
 
+# TODO: complete this route
 @app.post("/habits")
-def create_habit():
-    try:
+def create_habit(habit: HabitCreate):
+    content = habit.content
+    user_id = habit.user_id
+    conn = get_connection()
+    cursor = conn.cursor()
 
+    try:
+        cursor.execute("INSERT INTO habits")
         return {"message": "habit successfully created!"}
     except:
         return {"message": "something went wrong!"}

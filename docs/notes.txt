@@ -1,7 +1,6 @@
-while coding:
-    - consider what can go wrong (intentionally and unintentionally) on client and server side
-    - think about how your system would behave in those situations
-    - familiarize myself with browser dev tools
+- consider what can go wrong (intentionally and unintentionally) on client and server side
+-  think about how your system would behave in those situations
+- familiarize myself with browser dev tools
 
 - develop both schema and APIs together in like an initial "discovery" phase.
 - think of "use cases" aka what a user wants from your system,
@@ -16,3 +15,5 @@ if any of your data should be historical. As in, is there any data
 important to habit tracking that once created should not be updated, 
 only read. Updating a record should never be at the cost of losing 
 important historical data.
+    - historical habit completion dates stored in a separate table called completions to
+    avoid overriding it in the habits table 
