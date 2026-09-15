@@ -3,7 +3,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
-from auth import hash_password
+from auth import hash_password, verify_password
 from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
 
@@ -31,11 +31,9 @@ def root():
     return {"message": "welcome! habit tracker is alive"}
 
 
-# Pydantic model that auto validates user payload data before anything else runs in the POST/users route
-# provides automatic 422 error for missing/incorrect-typed fields
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: str  # michy7
+    password: str  # password123
 
     @field_validator("password")
     @classmethod
@@ -47,18 +45,47 @@ class UserCreate(BaseModel):
         return value
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 class HabitCreate(BaseModel):
     content: str
     user_id: int
 
 
+# TODO:
 @app.post("/logins")
-def login(user: UserCreate):
-    username = user.username
-    password = user.password
+def login(credentials: LoginRequest):
+    username = credentials.username
+    password = credentials.password
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM users WHERE username = %s;", (username,))
+        existing_user = cursor.fetchone()
+
+        if not existing_user:
+            raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+        hashed_password = existing_user[2]  # hashed_password is col 2
+        match = verify_password(password, hashed_password)
+
+        if match:
+            generate_token()
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials.")
+    except psycopg2.Error as e:
+        return {"error": "Unable to log in due to a database error"}, 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
-@app.post("/users", status_code=201)
+@app.post("/users", status_code=201)  # returns 201 when user is created successfully
 def create_user(user: UserCreate):
     username = user.username
     password = user.password
@@ -90,7 +117,7 @@ def create_user(user: UserCreate):
         conn.close()
 
 
-# TODO: complete this route
+# TODO:
 @app.post("/habits")
 def create_habit(habit: HabitCreate):
     content = habit.content
@@ -103,3 +130,7 @@ def create_habit(habit: HabitCreate):
         return {"message": "habit successfully created!"}
     except:
         return {"message": "something went wrong!"}
+
+
+def generate_token():
+    return
