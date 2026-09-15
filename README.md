@@ -1,6 +1,6 @@
-## Project Overview
+# Habit Tracker
 
-Habit tracker
+## Overview
 
 - supports multiple users
 - a user can:
@@ -17,4 +17,17 @@ Habit tracker
   - update habit completion status for dates that have passed
   - access/update other user's habits
 
-See [learnings.md](./notes/learnings.md) for notes on my process and decisions along the way
+## Features
+
+## Tech-Stack
+
+- Backend: Python
+- Database: PostgreSQL
+- Testing: Pytest
+- Security: JWT, Bcrypt
+
+## How to Run Locally
+
+## Summary of Key Learnings
+
+## Ideas for Future Improvement
