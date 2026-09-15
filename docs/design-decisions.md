@@ -31,8 +31,14 @@
 
 ## Security
 
-- Currently using `allow_origins=["*"]` for CORS since this is local-only
-- will replace with specific allowed origin(s) before any public deployment
+- CORS
+  - Currently using `allow_origins=["*"]` for CORS since this is local-only
+  - will replace with specific allowed origin(s) before any public deployment
+- Auth feedback
+  - Context: considered how specific my error messages should be. for instance, "username not found" or "incorrect password" vs something more generic like "incorrect credentials"
+  - attacker attempting to break into an account can efficiently enumerate valid usernames first by trying many usernames, watching for which ones return "incorrect password" instead of "username not found" — since that tells them the username exists, just the password was wrong
+  - a generic, identical error for both cases (e.g. "invalid username or password)
+    - denies the attacker any information about which part was wrong, forcing them to always guess both pieces together, with no shortcuts.
 
 ## DB Schema
 
@@ -46,3 +52,18 @@
     - pro: stores history/every date that a habit was completed (creates a new row)
     - pro: scales better since a habit can have multiple completions and I can choose to display them all via a calendar view or something later on if I build a FE
     - con: slightly more complex queries involving checking two tables via JOIN to answer qs like longest streak, current streak etc
+
+## Approach #2 Schema design / data modeling notes
+
+- users table (must create this table first so habit table can reference it; will only hold one row aka me for now)
+  - user_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY -> postgres auto generates/populates
+  - username VARCHAR(50) NOT NULL UNIQUE
+  - password_hash VARCHAR(255) NOT NULL
+- habits table
+  - habit_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY
+  - content TEXT NOT NULL
+  - date_created DATE DEFAULT CURRENT_DATE -----> auto populates; user does not need to enter
+  - user_id INT NOT NULL FOREIGN KEY
+- completions table
+  - habit_id INT NOT NULL FOREIGN KEY
+  - completion_date DATE DEFAULT CURRENT_DATE

@@ -18,8 +18,17 @@ My brain dump of conceptual thoughts, software principles I attempted to apply a
 - every decorator runs once at startup and registers the route to app (not everytime a request comes in)
 - the fx itself is not called yet until a request comes in
 - after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
-- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first
-  match
+- let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first match
+
+## FastAPI
+
+- FastAPI convention/rule: when a route parameter's type is a Pydantic BaseModel, FastAPI automatically knows to look for that data in the request body (parsed from JSON), rather than the URL (path or query).
+- Type hints (`: str`) are not enforced by Python itself — but FastAPI uses Pydantic internally to enforce them for ALL type-hinted parameters, whether they're inside a BaseModel or just plain function parameters.
+- What actually differs between a BaseModel param and a plain typed param isn't "is it validated" (both are) — it's WHERE FastAPI looks for the data:
+  - plain param matching a `{}` in the URL path → path parameter
+  - plain param not in the path → query parameter (`?username=...`)
+  - BaseModel type → request body (JSON)
+- BaseModel is the specific signal to FastAPI: "expect this data in the JSON request body, parse it, and validate/construct an instance of this class from it."
 
 ## Virtual Environments
 
@@ -53,21 +62,6 @@ db in venv
 - DRY
   - don't repeat yourself
   - implemented with get_connection fx that every route calls to create a connection with db
-
-## Approach #2 Schema design / data modeling notes
-
-- users table (must create this table first so habit table can reference it; will only hold one row aka me for now)
-  - user_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY -> postgres auto generates/populates
-  - username VARCHAR(50) NOT NULL UNIQUE
-  - password_hash VARCHAR(255) NOT NULL
-- habits table
-  - habit_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY
-  - content TEXT NOT NULL
-  - date_created DATE DEFAULT CURRENT_DATE -----> auto populates; user does not need to enter
-  - user_id INT NOT NULL FOREIGN KEY
-- completions table
-  - habit_id INT NOT NULL FOREIGN KEY
-  - completion_date DATE DEFAULT CURRENT_DATE
 
 ## Browser Dev Tools
 

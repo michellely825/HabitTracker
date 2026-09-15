@@ -9,6 +9,11 @@ A quick-reference guide for running the local server, interacting with the datab
 - regenerate requirements.txt to capture all newly installed dependencies: `pip3 freeze > requirements.txt`
 - generate a secret key as a one off command in terminal (one-off): `pip3 freeze > requirements.txt`
 
+## Git
+
+- amend most recent commit: `git commit --amend -m "Your new commit message"`
+- force update the remote server if I already pushed it to github: `git push origin main --force-with-lease`
+
 ## PostgreSQL (`psql`) Commands
 
 - connect to postgres server, specifically pointed to postgres db:
@@ -16,8 +21,11 @@ A quick-reference guide for running the local server, interacting with the datab
 - switch to diff db:
   `\c {db_name}`
 - see a list of tables in the db: `\dt`
+- see the schema for a table: `d {table_name}`
 - `quit` or `\q` to exit out of psql completely
 - `Ctrl+C` to instantly kill the current multi-line statement and return to a fresh `=#` prompt.
+- `cursor.execute()` is the method that actually runs a SQL command against my db, using the connection your cursor is tied to.
+  - important: cursor.execute() returns None! need the separate .fetchone()/.fetchall() step to retrieve results from SQL query
 
 ### Psql Terminal Tips
 
@@ -44,6 +52,10 @@ A quick-reference guide for running the local server, interacting with the datab
 **dotenv** = library to load .env files in python
 
 **requirements.txt** = equivalent to package.json for node aka lists dependencies and their versions for reproducibility purposes
+
+**cursor** = Python object psycopg2 gives me to actually talk to the database and get results back; client-side tool
+
+**BaseModels** = # Pydantic model that auto validates payload data before anything else runs in the routes; provides automatic 422 error for missing/incorrect-typed fields
 
 # HTTP Status Codes
 
