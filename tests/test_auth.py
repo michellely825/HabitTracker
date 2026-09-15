@@ -1,9 +1,5 @@
 import bcrypt
-from auth import hash_password
-
-
-def verify_password(password, hashed_password):
-    return bcrypt.checkpw(password, hashed_password)
+from auth import hash_password, verify_password
 
 
 def test_hash_and_verify_correct_password():

@@ -8,3 +8,7 @@ def hash_password(password):
         "utf-8"
     )  # bytes -> str necessary bc my DB requires password_hash to be a str type
     return hashed_password_str
+
+
+def verify_password(password, hashed_password):
+    return bcrypt.checkpw(password, hashed_password)
