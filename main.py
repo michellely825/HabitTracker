@@ -8,7 +8,6 @@ from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
 
 import psycopg2
-import bcrypt
 import jwt
 import os
 
@@ -39,9 +38,9 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password(cls, value):
         if len(value) < 5:
-            raise ValueError("password must be at least 5 characters")
+            raise ValueError("Password must be at least 5 characters.")
         if not any(char.isdigit() for char in value):
-            raise ValueError("password must contain at least one digit")
+            raise ValueError("Password must contain at least one digit.")
         return value
 
 
@@ -55,7 +54,6 @@ class HabitCreate(BaseModel):
     user_id: int
 
 
-# TODO:
 @app.post("/logins")
 def login(credentials: LoginRequest):
     username = credentials.username
@@ -71,15 +69,22 @@ def login(credentials: LoginRequest):
         if not existing_user:
             raise HTTPException(status_code=401, detail="Invalid credentials.")
 
-        hashed_password = existing_user[2]  # hashed_password is col 2
+        hashed_password = existing_user[2]  # hashed_password is element 2 in tuple
         match = verify_password(password, hashed_password)
 
         if match:
-            generate_token()
+            user_id = existing_user[0]
+            payload = {
+                "user_ud": user_id,
+                "username": username,
+            }  # TODO: make payload include issued at timestamp, expiration etc
+            token = generate_token(payload)
+            print("tokenn:", token)
+            return token
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials.")
     except psycopg2.Error as e:
-        return {"error": "Unable to log in due to a database error"}, 500
+        return {"error": "Unable to log in due to a database error."}, 500
     finally:
         cursor.close()
         conn.close()
@@ -89,6 +94,7 @@ def login(credentials: LoginRequest):
 def create_user(user: UserCreate):
     username = user.username
     password = user.password
+
     conn = get_connection()  # opens fresh connection
     cursor = conn.cursor()  # creates cursor that runs SQL query
 
@@ -111,14 +117,14 @@ def create_user(user: UserCreate):
 
         return {"user_id": new_user_id, "username": username}
     except psycopg2.Error as e:
-        return {"error": "unable to create new user due to database error"}, 500
+        return {"error": "Unable to create new user due to database error."}, 500
     finally:
         cursor.close()
         conn.close()
 
 
 # TODO:
-@app.post("/habits")
+@app.post("/habits", status_code=201)
 def create_habit(habit: HabitCreate):
     content = habit.content
     user_id = habit.user_id
@@ -127,10 +133,20 @@ def create_habit(habit: HabitCreate):
 
     try:
         cursor.execute("INSERT INTO habits")
-        return {"message": "habit successfully created!"}
+        return {"message": "Habit successfully created!"}
     except:
-        return {"message": "something went wrong!"}
+        return {"message": "Something went wrong!"}
 
 
-def generate_token():
-    return
+def generate_token(payload):
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+
+def verify_token(token: str) -> dict:
+    try:
+        decoded_payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return decoded_payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Expired token.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
