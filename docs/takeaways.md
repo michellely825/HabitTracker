@@ -20,6 +20,20 @@ My brain dump of conceptual thoughts, software principles I attempted to apply a
 - after the whole file has been executed, uvicorn starts listening on port and waits for incoming requests
 - let's say I defined two routes with same path & method, FastAPI doesn't overwrite the first with second; instead it registers both routes into the app obj and when a req comes in, it executes the first match
 
+- Backends can send requests just like a browser can too!
+- why? to talk to third party APIs to retrieve their data!
+- if a website doesn't have an API, devs will sometimes web scrape
+
+## HTTP Requests
+
+An HTTP request has a few separate parts, and they don't mix:
+
+The URL/route — POST /habits, tells FastAPI which function to run
+Headers — metadata about the request, sits separately from the body. This is where Authorization: Bearer <token> lives
+The body — the actual payload, in your case the JSON you're sending: {habit: "...", frequency: "..."}
+
+Your BaseModel is specifically wired to look at #3, the body. It has no idea headers even exist — that's not what it's for. So you're right that your habit content comes in through the BaseModel, but the token needs a separate mechanism, because it lives in a separate part of the request.
+
 ## FastAPI
 
 - FastAPI convention/rule: when a route parameter's type is a Pydantic BaseModel, FastAPI automatically knows to look for that data in the request body (parsed from JSON), rather than the URL (path or query).
@@ -29,6 +43,22 @@ My brain dump of conceptual thoughts, software principles I attempted to apply a
   - plain param not in the path → query parameter (`?username=...`)
   - BaseModel type → request body (JSON)
 - BaseModel is the specific signal to FastAPI: "expect this data in the JSON request body, parse it, and validate/construct an instance of this class from it."
+
+## Curl
+
+- Curl ("client URL"): command-line tool used to transfer data to or from a server without any user interface AKA acts like the frontend!
+  - takes a URL, fetches the raw data (HTML, JSON, or code), and dumps it directly into your terminal screen
+- Basic anatomy of a curl command: `curl [options] [URL]`
+- important flags
+  - `-X`: tells the server how to handle the req (POST, DELETE, PUT)
+    - GET is what curl does if you don't say otherwise
+    - `curl -X DELETE https://example.com`
+  - `-H`: header; Sends extra metadata to the server, like authentication tokens or the type of data you are sending.
+    - `curl -H "Authorization: Bearer MY_TOKEN" https://example.com`
+  - `-d`: data/payload: Sends a body of data to the server (used with POST or PUT). This automatically makes curl default to a POST request even if you skip the -X flag.
+    - `curl -d "username=bob" https://example.com`
+  - `-i`: include headers in output; Tells curl to show you the HTTP status code and response headers sent back by the server. This is arguably the most useful flag for backend debugging.
+    - `curl -i https://example.com`
 
 ## Virtual Environments
 
@@ -51,11 +81,41 @@ db in venv
 - postgres is a standalone db server that does not live in venv
 - venv is only for python packages!
 
-## Misc
+## PyJWT
 
-- SQL
-  - if it's a SELECT: result = cursor.fetchone() or fetchall()
-  - if it's an INSERT/UPDATE/DELETE: conn.commit()
+- JWT (jsonwebtokens): used for auth aka proving I am who I say I am to a server
+- tokens are readable! they are not encrypted
+- they consist of 3 parts separated by dots:
+  1. header (metadata about the token aka the signing algo used)
+  2. payload (user data)
+  3. signature (proof that the token hasn't been tampered with) - this is the part that provides security by making tampering detectable
+- Nobody can forge or tamper with it without knowing SECRET_KEY
+- tokens are stateless meaning the server doesn't store them but the client does (usually via localStorage, memory or cookie); server verifies them purely through math algo calcs aka recomputing the expected signature
+- cons:
+  - since the server isn't tracking active tokens, it can't easily "revoke" one early via force log out thus a stolen token remains valid until it naturally expires
+- jwt.encode() uses algorithm (Singular)
+- jwt.decode() uses algorithms (Plural List)
+- jwt decoder website: https://www.jwt.io/ (shows the decoded payload!)
+
+## SQL
+
+- if it's a SELECT: result = cursor.fetchone() or fetchall()
+- if it's an INSERT/UPDATE/DELETE: conn.commit()
+
+## fetchone()
+
+- Returns ONE row from the last executed query, as a tuple — each item corresponds to one selected column, in the order selected.
+  - e.g. `SELECT * FROM users` → `(user_id, username, password_hash)` → indexable via `result[0]`, `result[1]`, `result[2]`
+  - e.g. `SELECT password_hash FROM users` → `('hash_value',)` — a one-item tuple (note trailing comma)
+- If no matching row exists, returns `None` (not an empty tuple) — this is why `if not existing_user:` correctly catches "no row found."
+- Indexing (`result[0]`, `result[2]`, etc.) relies on knowing the exact column order from the query — fragile if column order changes; `SELECT *` depends on table definition order.
+- Contrast: `.fetchall()` returns ALL matching rows as a list of tuples — `.fetchone()` is essentially "give me the first tuple from that list, or None if empty."
+
+## Return type hints (`-> int`)
+
+- `def fx(param: str) -> int:` — the `-> int` is a **return type hint**, saying what type the function is expected to return.
+- Similar concept to TypeScript's `function fx(param: string): number` — same idea (annotate expected types), different syntax (`->` in Python vs `:` in TS).
+- Like parameter type hints, NOT enforced by plain Python at runtime — just documentation/IDE support, unless paired with a tool like `mypy`.
 
 ## Software Engineering Principles
 

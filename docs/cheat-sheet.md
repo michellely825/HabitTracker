@@ -8,6 +8,7 @@ A quick-reference guide for running the local server, interacting with the datab
 - run tests: `python3 -m pytest`
 - regenerate requirements.txt to capture all newly installed dependencies: `pip3 freeze > requirements.txt`
 - generate a secret key as a one off command in terminal (one-off): `pip3 freeze > requirements.txt`
+- to activate venv: `source .venv/bin/activate`
 
 ## Git
 
