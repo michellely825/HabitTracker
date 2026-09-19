@@ -1,18 +1,14 @@
-# TODO: move routes into their own folders
+# TODO: move routes into their own files
+# TODO: move basemodels into their own files
+# TODO: write API test scripts using requests library?
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
-from auth import hash_password, verify_password
+from auth import hash_password, verify_password, generate_token, verify_token
 from pydantic import BaseModel, field_validator
-from dotenv import load_dotenv
 
 import psycopg2
-import jwt
-import os
-
-load_dotenv()
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 # creates an empty instance of FastAPI app which will hold all the routes
 app = FastAPI()
@@ -51,7 +47,6 @@ class LoginRequest(BaseModel):
 
 class HabitCreate(BaseModel):
     content: str
-    user_id: int
 
 
 @app.post("/logins")
@@ -75,7 +70,7 @@ def login(credentials: LoginRequest):
         if match:
             user_id = existing_user[0]
             payload = {
-                "user_ud": user_id,
+                "user_id": user_id,
                 "username": username,
             }  # TODO: make payload include issued at timestamp, expiration etc
             token = generate_token(payload)
@@ -112,10 +107,10 @@ def create_user(user: UserCreate):
             (username, hashed_password),
         )
 
-        new_user_id = cursor.fetchone()[0]  # returns first val in tuple aka user_id
+        user_id = cursor.fetchone()[0]  # returns first val in tuple aka user_id
         conn.commit()  # makes insert SQL statement permanent
 
-        return {"user_id": new_user_id, "username": username}
+        return {"user_id": user_id, "username": username}
     except psycopg2.Error as e:
         return {"error": "Unable to create new user due to database error."}, 500
     finally:
@@ -123,30 +118,23 @@ def create_user(user: UserCreate):
         conn.close()
 
 
-# TODO:
+# TODO: update HTTP date from GMT to PST
 @app.post("/habits", status_code=201)
-def create_habit(habit: HabitCreate):
+def create_habit(habit: HabitCreate, request: Request):
     content = habit.content
-    user_id = habit.user_id
+    decoded_payload = verify_token(request)
+    user_id = decoded_payload["user_id"]
+
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute("INSERT INTO habits")
-        return {"message": "Habit successfully created!"}
+        cursor.execute(
+            "INSERT INTO habits (content, user_id) VALUES (%s, %s) RETURNING habit_id;",
+            (content, user_id),
+        )
+        habit_id = cursor.fetchone()[0]  # returns first tuple val
+        conn.commit()
+        return {"message": "Habit successfully created!", "habit_id": habit_id}
     except:
         return {"message": "Something went wrong!"}
-
-
-def generate_token(payload):
-    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
-
-def verify_token(token: str) -> dict:
-    try:
-        decoded_payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return decoded_payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Expired token.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token.")
