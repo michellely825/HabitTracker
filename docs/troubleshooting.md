@@ -75,3 +75,32 @@
 - ExpiredSignatureError is actually a subclass of InvalidTokenError meaning an expired token is also an InvalidTokenError and since Python checks except blocks in order, top to bottom, and stops at the first match my `except jwt.InvalidTokenError` will catch expired tokens too,
 - so expired tokens will always get the generic "Invalid token." message, never "Expired token."
 - fix: put the more specific exception first
+
+## Token verification kept failing even though the token itself was valid.
+
+- error msg:
+
+```
+  (.venv) michellely@MichellesLaptop habit_tracker % curl -i -X POST http://localhost:8000/habits \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer [token]" \
+  -d '{"content":"sleep"}'
+  HTTP/1.1 401 Unauthorized
+  date: Fri, 18 Sep 2026 06:16:10 GMT
+  server: uvicorn
+  content-length: 27
+  content-type: application/json
+
+{"detail":"Invalid token."}%
+```
+
+- Debugging process
+
+  - Verified the token I sent matched what POST /logins actually returned -> allowed me to rule out a copy/paste error.
+  - Decoded the token at jwt.io to confirm the payload itself was valid.
+  - Spotted an unrelated typo (user_ud → user_id), fixed it in my code, generated a fresh token but error persisted, so ruled that out as the cause.
+  - Checked the server terminal for the actual error traceback instead of relying on the client-side error
+  - Printed the raw request.headers["Authorization"] value and saw it was "Bearer <token>" aka the "Bearer " prefix was still attached and being passed into jwt.decode() as-is
+  - Fix: Split the header on the space to isolate just the token, which fixed it
+
+- Pattern across this process: rule out the obvious/easy explanations first then go to the source of truth aka server logs

@@ -14,6 +14,10 @@ A quick-reference guide for running the local server, interacting with the datab
 
 - amend most recent commit: `git commit --amend -m "Your new commit message"`
 - force update the remote server if I already pushed it to github: `git push origin main --force-with-lease`
+- create a new branch and switch to it: `git checkout -b {branch_name}` or `git switch -c {branch_name}`
+- switch branches: `git checkout {branch_name}` or `git switch`
+- just create new branch: `git checkout {branch_name}`
+- merging branch back to main: `git checkout main` AND `git merge {branch_name}`
 
 ## PostgreSQL (`psql`) Commands
 

@@ -127,15 +127,4 @@ db in venv
 
 - fetch(): built in js fx provided by the browser that is specifically designed for making HTTP reqs
 
-## Next steps?
-
-- [x] set up my DB
-- [x] create user table first
-- [x] validate schema design in psql terminal by inserting new users into table, making sure ids auto generate, usernames have to be unique etc.
-- [x] test python to postgres connection via POST/users
-- [x] create habits table
-- [x] validate check habits schema in psql terminal
-- [x] set up password hashing via bcrypt
-- [x] pytest for password hashing
-- [] set up JWT auth?
-- []
+## Git workflow

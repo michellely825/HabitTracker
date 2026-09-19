@@ -67,3 +67,10 @@
 - completions table
   - habit_id INT NOT NULL FOREIGN KEY
   - completion_date DATE DEFAULT CURRENT_DATE
+
+## deciding payload for POST/logins
+
+- context:
+  - returning a dict with user_id and username or just user_id since that is all POST/habits needs to create a new habit for the user and save it to habits table
+  - habits table cols: habit_id (auto generated), content (provided by user), date_created (auto generated), user_id (extracted from token provided by user)
+- decided to return username just in case for now, not sure if i would need it but better safe than sorry? is there any tradeoffs/cons of a slightly bigger paylod? I presume it can result in requiring more memory/effort but in this scenario, it should be fine?
