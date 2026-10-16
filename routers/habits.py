@@ -141,7 +141,8 @@ def soft_delete_habit(habit_id: int, request: Request):
     try:
         ensure_habit_valid(cursor, user_id, habit_id)
         cursor.execute(
-            "UPDATE habits SET is_active = FALSE WHERE habit_id = %s;", (habit_id,)
+            "UPDATE habits SET is_active = FALSE WHERE habit_id = %s AND is_active = TRUE;",
+            (habit_id,),
         )
         conn.commit()
         if cursor.rowcount == 0:
