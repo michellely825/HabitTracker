@@ -44,6 +44,7 @@ def verify_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token.")
 
 
+# confirms that the habit exists and the user is authorized to access it
 def ensure_habit_valid(cursor, user_id: int, habit_id: int) -> None:
     cursor.execute(
         "SELECT habit_id FROM habits WHERE user_id = %s AND habit_id = %s;",
@@ -55,4 +56,4 @@ def ensure_habit_valid(cursor, user_id: int, habit_id: int) -> None:
     match = cursor.fetchone()  # returns a tuple
     if match is None:
         raise HTTPException(status_code=404, detail=f"Habit id#{habit_id} not found.")
-    # implicitly returns None and that is fine since nothing to reutnr
+    # implicitly returns None and that is fine since nothing to return

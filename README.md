@@ -4,6 +4,7 @@
 
 - supports multiple users
 - a user can:
+
   - create a user account
   - login to their account
   - add a new habit
@@ -14,9 +15,11 @@
   - get a habit's longest streak
   - mark a habit as complete for the day
   - mark a habit as incomplete for the day
-  - delete a habit (marks it as inactive)
+  - delete a habit (marks the habits is_active flag as false)
+  - undelete a habit (marks the habits is_active flag as true)
+
 - a user can not:
-  - mark a complete habit complete again
+  - mark a complete habit complete again (or actually ig they technically "can"...but it'll return a "nothing to unmark msg")
   - update contents of a habit -> bc if they could, it would cause problems later on when calculating streaks?
   - update habit completion status for dates that have passed or future dates
   - access/update other user's habits

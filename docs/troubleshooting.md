@@ -124,3 +124,33 @@
 - A misleading/wrong status code doesn't always mean the status code logic itself is wrong - sometimes it's a symptom of a swallowed exception via a bare `except` + `return` instead of `raise`.
 - Bare `except:` blocks hide the actual problem. Temporarily catching `Exception as e` and printing it is a fast, low-effort way to surface the real error before deciding on a proper fix.
 - Any `INSERT`/`UPDATE`/`DELETE` that I want to `.fetchone()`/`.fetchall()` after MUST have a `RETURNING` clause - otherwise there's nothing to fetch, even if the statement itself succeeded.
+
+## Bug: passing dict instead of int to SQL query (verify_token)
+
+**Symptom:** psycopg2 error about passing a dict when it should be an int habit_id/user_id.
+
+**Cause:** I wrote `user_id = verify_token(token)` instead of `user_id = verify_token(token)["user_id"]`. `verify_token` returns the full decoded JWT payload (a dict like `{"user_id": 11, "username": "michy7"}`), not just the user_id value - so I was passing the whole dict into a SQL query expecting an int.
+
+**Fix:** Always extract the specific key I need: `verify_token(token)["user_id"]`.
+
+**Takeaway:** when reusing a helper function across routes, double check I'm using its actual return value correctly each time, not assuming based on the variable name I happen to assign it to.
+
+## Bug: HTTPException swallowed by overly broad except block
+
+**Symptom:** `ensure_habit_valid` correctly raised a 404 (visible in my terminal via a print statement), but the client received a 200 with a null body instead of the 404.
+
+**Cause:** My `except Exception as e:` block was too broad - since `HTTPException` is itself a subclass of `Exception`, this caught the 404 exception too, instead of letting it pass through to FastAPI. Inside that except block, I only printed the error and didn't re-raise anything, so the function implicitly returned None - which FastAPI treated as an ordinary 200 success.
+
+**Fix:** Catch specific exception types (e.g. `except psycopg2.Error`) instead of bare `except Exception` - so HTTPExceptions raised elsewhere in my code (like in ensure_habit_valid) propagate naturally up to FastAPI, which has built-in handling for them.
+
+**Takeaway:** `raise` doesn't "return" - it immediately interrupts execution and propagates upward until something catches it. The exception jumps straight to checking `except` clauses the instant it's raised, skipping all remaining code in the try block - it doesn't finish executing the rest of the try block first. Catching exceptions too broadly can accidentally intercept exceptions I specifically wanted to let pass through untouched.
+
+## Bug: UPDATE reports 1 row changed even when value didn't actually change
+
+**Symptom:** Running my soft-delete PATCH twice on the same habit still returned "UPDATE 1" the second time, even though is_active was already FALSE - expected "UPDATE 0" like I'd seen with DELETE on a non-matching row.
+
+**Cause:** My WHERE clause only filtered on `habit_id`, not on the current value of `is_active`. Postgres counts rows that MATCHED the WHERE clause and were processed, not rows whose value actually changed. Since the row still existed and matched habit_id, Postgres genuinely performed the update (setting is_active to FALSE, which it already was) and counted it.
+
+**Fix:** Added `AND is_active = TRUE` to the WHERE clause, so an already-inactive habit no longer matches, and rowcount correctly reflects 0 in that case.
+
+**Takeaway:** UPDATE's rowcount reflects "how many rows matched my WHERE clause," not "how many rows had their value actually change." If I want to distinguish "already in this state" from "just changed to this state," the WHERE clause needs to explicitly check the current value too - similar to the DELETE rowcount pattern I already used for mark_habit_incomplete's "nothing to unmark" case.

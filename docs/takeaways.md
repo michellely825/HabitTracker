@@ -235,3 +235,10 @@ I ran into a subtle question: if `completions.habit_id` has a `NOT NULL` constra
 - If I ever changed `habit_id` to be nullable for some unrelated reason later (e.g. some future feature), a real completions row could have `habit_id = NULL` - and my LEFT JOIN check would then wrongly treat a real, existing completion as "no match found."
 
 **The general principle:** choose the version of a check that's correct BY DEFINITION (primary key can never be null on a real row), not just correct by coincidence given the current schema. This is the same reasoning as adding explicit UNIQUE/NOT NULL constraints earlier rather than just hoping application code behaves correctly - relying on structural guarantees over incidental/current-state correctness.
+
+## more git knowledge
+
+- Uncommitted and unsaved changes float freely, visible on any branch, because they're not yet part of any commit chain — committing is the specific act of "locking" a change into one particular branch's history, which is also the exact moment branch-switching starts to matter for that change.
+- Unsaved (in editor's memory only) — exists only in RAM, inside your text editor's running process. If your editor crashed right now, or you closed it without saving, this content would be gone forever — it never touched disk at all.
+  Saved, but uncommitted (on disk) — once you hit Cmd+S, the editor writes the content to the actual file on your disk/SSD. It now survives closing the editor or restarting your computer — but Git doesn't know or care about it yet; it's just a regular file sitting there, same as any document on your computer.
+  Committed (in Git's history) — Git takes a permanent snapshot of what's currently on disk and stores it inside .git, forever retrievable by its commit hash, now formally part of some branch's chain.

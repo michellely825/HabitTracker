@@ -1,6 +1,3 @@
-# TODO: move basemodels into their own files
-# TODO: write API test scripts using requests library?
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import users, habits
