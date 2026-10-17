@@ -1,3 +1,4 @@
+# TODO: write API test scripts using requests library?
 # TODO: eventually i want to test my habits endpoints but i'm not
 # sure how to without creating a bunch of dummy users/habits and
 # polluting my DB...

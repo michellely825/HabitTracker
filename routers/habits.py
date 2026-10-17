@@ -54,7 +54,7 @@ def get_habits(
             )
         elif status == "incomplete":
             cursor.execute(
-                "SELECT * FROM habits LEFT JOIN completions ON habits.habit_id = completions.habit_id AND completions.completion_date = CURRENT_DATE WHERE user_id = %s AND completions.completion_id is NULL;",
+                "SELECT * FROM habits LEFT JOIN completions ON habits.habit_id = completions.habit_id AND completions.completion_date = CURRENT_DATE WHERE user_id = %s AND habits.is_active = true AND completions.completion_id is NULL;",
                 (user_id,),
             )
         else:
@@ -130,5 +130,28 @@ def mark_habit_incomplete(habit_id: int, request: Request):
         conn.close()
 
 
-# TODO: implement DELETE/habits/:id route
-# @app.delete("/habits/{id}") # soft delete aka update is_active flag to false
+@router.patch("/habits/{habit_id}")
+def soft_delete_habit(habit_id: int, request: Request):
+    token = extract_token_from_header(request)
+    user_id = verify_token(token)["user_id"]
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        ensure_habit_valid(cursor, user_id, habit_id)
+        cursor.execute(
+            "UPDATE habits SET is_active = FALSE WHERE habit_id = %s AND is_active = TRUE;",
+            (habit_id,),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return {
+                "message": f"Nothing to delete. Habit #id{habit_id} has already been deleted."
+            }
+        return {"message": f"Habit id#{habit_id} was deleted."}
+    except psycopg2.Error as e:
+        raise HTTPException(status_code=500, detail="Something went wrong")
+    finally:
+        conn.close()
+        cursor.close()

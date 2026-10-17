@@ -17,3 +17,5 @@ only read. Updating a record should never be at the cost of losing
 important historical data.
     - historical habit completion dates stored in a separate table called completions to
     avoid overriding it in the habits table 
+
+- look into `git rebase`!
