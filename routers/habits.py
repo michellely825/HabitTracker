@@ -28,8 +28,10 @@ def create_habit(habit: HabitCreate, request: Request):
         habit_id = cursor.fetchone()[0]  # returns first tuple val
         conn.commit()
         return {"message": "Habit successfully created!", "habit_id": habit_id}
-    except:
-        return {"message": "Something went wrong!"}
+    except psycopg2.Error as e:
+        raise HTTPException(
+            status_code=500, detail="Unable to create new habit due to database error"
+        )
     finally:
         cursor.close()
         conn.close()
@@ -54,7 +56,7 @@ def get_habits(
             )
         elif status == "incomplete":
             cursor.execute(
-                "SELECT * FROM habits LEFT JOIN completions ON habits.habit_id = completions.habit_id AND completions.completion_date = CURRENT_DATE WHERE user_id = %s AND habits.is_active = true AND completions.completion_id is NULL;",
+                "SELECT * FROM habits LEFT JOIN completions ON habits.habit_id = completions.habit_id AND completions.completion_date = CURRENT_DATE WHERE habits.user_id = %s AND habits.is_active = true AND completions.completion_id is NULL;",
                 (user_id,),
             )
         else:
@@ -64,10 +66,11 @@ def get_habits(
             )
 
         habits = cursor.fetchall()
-
         return habits
-    except:
-        return {"message": "Something went wrong"}
+    except psycopg2.Error as e:
+        raise HTTPException(
+            status_code=500, detail="Unable to get habits due to database error"
+        )
     finally:
         cursor.close()
         conn.close()
@@ -95,7 +98,10 @@ def mark_habit_complete(habit_id: int, request: Request):
             detail=f"Habit id#{habit_id} has already been marked as complete.",
         )
     except psycopg2.Error as e:
-        raise HTTPException(status_code=500, detail="Something went wrong")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to mark habit complete due to database error",
+        )
     finally:
         cursor.close()
         conn.close()
@@ -111,7 +117,6 @@ def mark_habit_incomplete(habit_id: int, request: Request):
     cursor = conn.cursor()
 
     try:
-        # TODO: should ensure_habit_valid be inside or outside try block?
         ensure_habit_valid(cursor, user_id, habit_id)
         cursor.execute(
             "DELETE FROM completions WHERE habit_id = %s AND completion_date = CURRENT_DATE;",
@@ -124,7 +129,10 @@ def mark_habit_incomplete(habit_id: int, request: Request):
             }
         return {"message": f"Habit id#{habit_id} has been marked as incomplete today."}
     except psycopg2.Error as e:
-        raise HTTPException(status_code=500, detail="Something went wrong")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to mark habit incomplete due to database error",
+        )
     finally:
         cursor.close()
         conn.close()
@@ -151,7 +159,12 @@ def soft_delete_habit(habit_id: int, request: Request):
             }
         return {"message": f"Habit id#{habit_id} was deleted."}
     except psycopg2.Error as e:
-        raise HTTPException(status_code=500, detail="Something went wrong")
+        raise HTTPException(
+            status_code=500, detail="Unable to delete habit due to database error"
+        )
     finally:
-        conn.close()
         cursor.close()
+        conn.close()
+
+
+# TODO: reactivate a deleted habit
