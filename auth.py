@@ -5,7 +5,7 @@ import bcrypt
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv()  # reads key-value pairs from .env file and adds them to my apps environment variables
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
@@ -28,6 +28,7 @@ def generate_token(payload):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
+# headers = {"Authorization": "Bearer tokenasdjakldjalkdja"}
 def extract_token_from_header(request: Request):
     auth_header = request.headers["Authorization"]
     token = auth_header.split(" ")[1]

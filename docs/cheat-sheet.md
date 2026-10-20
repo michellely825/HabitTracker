@@ -43,6 +43,8 @@ My quick-reference guide cheat sheet for running the local server, interacting w
 - `Ctrl+C` to instantly kill the current multi-line statement and return to a fresh `=#` prompt.
 - `cursor.execute()` is the method that actually runs a SQL command against my db, using the connection your cursor is tied to.
   - important: cursor.execute() returns None! need the separate .fetchone()/.fetchall() step to retrieve results from SQL query
+- `brew services stop postgresql@16` stops postgres
+- `brew services start postgresql@16` starts postgres
 
 ### Psql Terminal Tips
 
@@ -151,8 +153,8 @@ curl -i -X DELETE http://localhost:8000/habits/1/complete \
 ## Get all complete habits
 
 ```michy7
-curl -i "http://localhost:8000/habits?status=complete" \
--H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMSwidXNlcm5hbWUiOiJtaWNoeTcifQ.5TUR1RuXTwIWwoo8EB1X2myZ3YwvjTclFx-vYpiIzn4"
+curl "http://localhost:8000/habits" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMSwidXNlcm5hbWUiOiJtaWNoeTcifQ.5TUR1RuXTwIWwoo8EB1X2myZ3YwvjTclFx-vYpiIzn4" | python3 -m json.tool
 ```
 
 ```michy8

@@ -242,3 +242,25 @@ I ran into a subtle question: if `completions.habit_id` has a `NOT NULL` constra
 - Unsaved (in editor's memory only) — exists only in RAM, inside your text editor's running process. If your editor crashed right now, or you closed it without saving, this content would be gone forever — it never touched disk at all.
   Saved, but uncommitted (on disk) — once you hit Cmd+S, the editor writes the content to the actual file on your disk/SSD. It now survives closing the editor or restarting your computer — but Git doesn't know or care about it yet; it's just a regular file sitting there, same as any document on your computer.
   Committed (in Git's history) — Git takes a permanent snapshot of what's currently on disk and stores it inside .git, forever retrievable by its commit hash, now formally part of some branch's chain.
+
+## Analogy for conn and cursor, revisited
+
+Think of it like calling a restaurant for a reservation:
+
+conn (connection) = dialing the restaurant’s phone number and getting through — the line is open, you’re connected
+cursor (cursor) = the actual hostess who takes your request (“table for two”) and gives you a response, using that already-open phone line
+
+If the phone call itself never connects (restaurant’s line is down) — that’s a get_connection() failure, nothing to do with the hostess at all. If the call connects fine, but the hostess tells you “sorry, we’re fully booked” — that’s more like your cursor.execute() failing even though the connection itself was fine.
+
+## Should you incorporate e into the returned message?
+
+Generally, no — not the full raw exception message, and here’s why: the raw error might contain sensitive internal details (database hostnames, internal paths, query details) that you don’t want exposed to whoever’s calling your API. The common practice: log the real error server-side (so you can debug it), but return a generic, safe message to the client:
+
+```
+except psycopg2.Error as e:
+print(f"Health check DB error: {e}") # for you, server-side
+return {"status": "bad", "message": "Database connection failed"} # safe for the client
+```
+
+Terminal #1 (running uvicorn) → shows any print() statements, plus FastAPI’s own request logs (INFO: 127.0.0.1 - "GET / HTTP/1.1" 200 OK)
+Terminal #2 (where you run curl ...) or Swagger UI in your browser → shows the actual JSON response body you returned

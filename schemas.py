@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator
 
 
+# POST/users
 class UserCreate(BaseModel):
     username: str  # michy7
     password: str  # password123
@@ -15,10 +16,12 @@ class UserCreate(BaseModel):
         return value
 
 
+# POST/logins
 class LoginRequest(BaseModel):
     username: str
     password: str
 
 
+# POST/habits
 class HabitCreate(BaseModel):
     content: str

@@ -4,6 +4,7 @@
 # polluting my DB...
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 
 def test_mark_habit_incomplete_success():
