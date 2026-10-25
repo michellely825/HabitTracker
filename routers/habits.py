@@ -153,11 +153,8 @@ def soft_delete_habit(habit_id: int, request: Request):
             (habit_id,),
         )
         conn.commit()
-        # TODO: rethink
         if cursor.rowcount == 0:
-            return {
-                "message": f"Nothing to delete. Habit #id{habit_id} has already been deleted."
-            }
+            print(f"Nothing to delete. Habit #id{habit_id} has already been deleted.")
         return {"message": f"Habit id#{habit_id} was deleted."}
     except psycopg2.Error as e:
         raise HTTPException(
