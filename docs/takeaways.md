@@ -264,3 +264,13 @@ return {"status": "bad", "message": "Database connection failed"} # safe for the
 
 Terminal #1 (running uvicorn) → shows any print() statements, plus FastAPI’s own request logs (INFO: 127.0.0.1 - "GET / HTTP/1.1" 200 OK)
 Terminal #2 (where you run curl ...) or Swagger UI in your browser → shows the actual JSON response body you returned
+
+## Idempotent success responses, informed by Victor's code review feedback
+
+I originally returned a special message when a user tried to mark a habit complete that was already complete (or unmark one that wasn't completed) - e.g. "Habit already marked complete" / "Nothing to unmark." This was mainly useful for ME during manual testing, to confirm the route was actually being hit and behaving as expected.
+
+Victor pointed out that from the client's perspective, this isn't really noteworthy - the backend should just silently succeed either way, since the end state (habit is complete) is identical whether a new completion row was inserted or one already existed. Returning a special message implies something unusual happened, when really nothing did, by design.
+
+**Decision:** return the same success response to the client regardless of whether the action was a genuine change or a no-op (an action that runs but results in nothing actually changing). Keep any diagnostic info (e.g. "this was a no-op") server-side only, via print/logging - not part of the actual response.
+
+**Takeaway:** debugging aids useful to ME as the developer don't automatically belong in the API's actual response contract. The client only needs to know the outcome it cares about ("is this habit now complete? yes") - not internal implementation details about whether a row was newly inserted or already existed.

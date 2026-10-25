@@ -69,7 +69,6 @@ def login(credentials: LoginRequest):
                 "username": username,
             }  # TODO: make payload include issued at timestamp, expiration etc
             token = generate_token(payload)
-            print("HERE IS THE TOKENN:", token)
             return token
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials.")
