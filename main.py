@@ -17,17 +17,22 @@ app.add_middleware(
 
 @app.get("/")
 def health_check():
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = None  # preassigns conn in the scenario where get_connection fails and conn & cursor are not assigned but closed in finally block
     try:
+        conn = get_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT 1;")
         return {"status": "ok", "message": "DB connection is alive"}
-    except psycopg2.Error as e:
+    except psycopg2.OperationalError as e:  # e.g. if postgres is down, unreachable etc
+        print(f"Health check connection error: {e}")
+        return {"status": "bad", "message": "Could not connect to database"}
+    except psycopg2.Error as e:  # e.g. bad SQL syntax
         print(f"Health check DB error: {e}")
-        return {"status": "bad", "message": "DB error occurred"}
-    finally:
-        cursor.close()
-        conn.close()
+        return {"status": "bad", "message": "Database error occurred"}
+    finally:  # finally always runs before an exception is allowed to continue propagating further — regardless of whether anything ever catches it.
+        if conn:  # only closes objs if they were successfully created
+            cursor.close()
+            conn.close()
 
 
 app.include_router(users.router)
