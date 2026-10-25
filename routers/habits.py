@@ -148,6 +148,7 @@ def soft_delete_habit(habit_id: int, request: Request):
 
     try:
         ensure_habit_valid(cursor, user_id, habit_id)
+        # TODO: consider removing WHERE is_active = TRUE - idempotent?
         cursor.execute(
             "UPDATE habits SET is_active = FALSE WHERE habit_id = %s AND is_active = TRUE;",
             (habit_id,),
@@ -165,4 +166,28 @@ def soft_delete_habit(habit_id: int, request: Request):
         conn.close()
 
 
-# TODO: reactivate a deleted habit
+@router.patch("/habits/{habit_id}/reactivate")
+def reactivate_habit(habit_id: int, request: Request):
+    token = extract_token_from_header(request)
+    user_id = verify_token(token)["user_id"]
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        ensure_habit_valid(cursor, user_id, habit_id)
+        cursor.execute(
+            "UPDATE habits SET is_active = TRUE where habit_id = %s and is_active = FALSE;",
+            (habit_id,),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            print(f"Habit id#{habit_id} was already active.")
+        return {"message": f"Habit id#{habit_id} was reactivated."}
+    except psycopg2.Error as e:
+        raise HTTPException(
+            status_code=500, detail="Unable to reactivate habit due to database error"
+        )
+    finally:
+        cursor.close()
+        conn.close()
