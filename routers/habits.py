@@ -40,7 +40,7 @@ def create_habit(habit: HabitCreate, request: Request):
 @router.get("/habits", status_code=200)
 def get_habits(
     request: Request, status: Optional[str] = None
-):  # status is an optional query param that is appended after '?' in URL
+):  # status - optional query param after '?' in URL
     token = extract_token_from_header(request)
     decoded_payload = verify_token(token)
     user_id = decoded_payload["user_id"]
@@ -92,11 +92,12 @@ def mark_habit_complete(habit_id: int, request: Request):
         )
         conn.commit()
         return {"message": f"Habit id#{habit_id} has been marked as completed"}
-    except psycopg2.errors.UniqueViolation as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Habit id#{habit_id} has already been marked as complete.",
-        )
+    except (
+        psycopg2.errors.UniqueViolation
+    ) as e:  # enforced by UNIQUE (habit_id, completion_date) constraint in schema
+        conn.rollback()  # resets the connection after the failed insertion
+        print(f"Habit id#{habit_id} has already been marked as complete - no-op")
+        return {"message": f"Habit id#{habit_id} marked complete"}
     except psycopg2.Error as e:
         raise HTTPException(
             status_code=500,
@@ -108,6 +109,7 @@ def mark_habit_complete(habit_id: int, request: Request):
 
 
 # deletes the specified habit's completion row for current date
+# no-op if state is already correct (e.g. calling the fx twice in a row on same habit)
 @router.delete("/habits/{habit_id}/complete")
 def mark_habit_incomplete(habit_id: int, request: Request):
     token = extract_token_from_header(request)
@@ -124,10 +126,8 @@ def mark_habit_incomplete(habit_id: int, request: Request):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            return {
-                "message": f"Nothing to unmark. Habit #id{habit_id} has not been completed yet today."
-            }
-        return {"message": f"Habit id#{habit_id} has been marked as incomplete today."}
+            print(f"Habit #id{habit_id} has not been completed yet today - no-op")
+        return {"message": f"Habit id#{habit_id} marked incomplete"}
     except psycopg2.Error as e:
         raise HTTPException(
             status_code=500,
@@ -153,6 +153,7 @@ def soft_delete_habit(habit_id: int, request: Request):
             (habit_id,),
         )
         conn.commit()
+        # TODO: rethink
         if cursor.rowcount == 0:
             return {
                 "message": f"Nothing to delete. Habit #id{habit_id} has already been deleted."
