@@ -1,6 +1,6 @@
 # Design Decisions/Tradeoffs
 
-Log of all the times "I considered X vs Y, and chose X, Y or Z because"
+Log of all the times "I considered X vs Y, and chose X, Y or Z because..."
 
 ## Username Uniqueness
 

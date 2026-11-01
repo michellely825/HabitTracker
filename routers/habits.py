@@ -96,7 +96,9 @@ def mark_habit_complete(habit_id: int, request: Request):
         psycopg2.errors.UniqueViolation
     ) as e:  # enforced by UNIQUE (habit_id, completion_date) constraint in schema
         conn.rollback()  # resets the connection after the failed insertion
-        print(f"Habit id#{habit_id} has already been marked as complete - no-op")
+        print(
+            f"No-op: Habit id#{habit_id} has already been marked as complete"
+        )  # server-side only
         return {"message": f"Habit id#{habit_id} marked complete"}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -126,7 +128,9 @@ def mark_habit_incomplete(habit_id: int, request: Request):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"Habit #id{habit_id} has not been completed yet today - no-op")
+            print(
+                f"No-op: Habit #id{habit_id} has not been completed yet today"
+            )  # server-side only
         return {"message": f"Habit id#{habit_id} marked incomplete"}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -148,14 +152,15 @@ def soft_delete_habit(habit_id: int, request: Request):
 
     try:
         ensure_habit_valid(cursor, user_id, habit_id)
-        # TODO: consider removing WHERE is_active = TRUE - idempotent?
         cursor.execute(
             "UPDATE habits SET is_active = FALSE WHERE habit_id = %s AND is_active = TRUE;",
             (habit_id,),
         )
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"Nothing to delete. Habit #id{habit_id} has already been deleted.")
+            print(
+                f"No-op: Habit #id{habit_id} has already been deleted."
+            )  # server-side only
         return {"message": f"Habit id#{habit_id} was deleted."}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -182,7 +187,7 @@ def reactivate_habit(habit_id: int, request: Request):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"Habit id#{habit_id} was already active.")
+            print(f"No-op: Habit id#{habit_id} was already active.")  # server-side only
         return {"message": f"Habit id#{habit_id} was reactivated."}
     except psycopg2.Error as e:
         raise HTTPException(

@@ -28,6 +28,7 @@ def generate_token(payload):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
+# TODO: update fx name to extract_token()
 # headers = {"Authorization": "Bearer tokenasdjakldjalkdja"}
 def extract_token_from_header(request: Request):
     auth_header = request.headers["Authorization"]
