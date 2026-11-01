@@ -96,7 +96,9 @@ def mark_habit_complete(habit_id: int, request: Request):
         psycopg2.errors.UniqueViolation
     ) as e:  # enforced by UNIQUE (habit_id, completion_date) constraint in schema
         conn.rollback()  # resets the connection after the failed insertion
-        print(f"Habit id#{habit_id} has already been marked as complete - no-op")
+        print(
+            f"No-op: Habit id#{habit_id} has already been marked as complete"
+        )  # server-side only
         return {"message": f"Habit id#{habit_id} marked complete"}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -126,7 +128,9 @@ def mark_habit_incomplete(habit_id: int, request: Request):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"Habit #id{habit_id} has not been completed yet today - no-op")
+            print(
+                f"No-op: Habit #id{habit_id} has not been completed yet today"
+            )  # server-side only
         return {"message": f"Habit id#{habit_id} marked incomplete"}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -154,7 +158,9 @@ def soft_delete_habit(habit_id: int, request: Request):
         )
         conn.commit()
         if cursor.rowcount == 0:
-            print(f"Nothing to delete. Habit #id{habit_id} has already been deleted.")
+            print(
+                f"No-op: Habit #id{habit_id} has already been deleted."
+            )  # server-side only
         return {"message": f"Habit id#{habit_id} was deleted."}
     except psycopg2.Error as e:
         raise HTTPException(
@@ -165,4 +171,28 @@ def soft_delete_habit(habit_id: int, request: Request):
         conn.close()
 
 
-# TODO: reactivate a deleted habit
+@router.patch("/habits/{habit_id}/reactivate")
+def reactivate_habit(habit_id: int, request: Request):
+    token = extract_token_from_header(request)
+    user_id = verify_token(token)["user_id"]
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        ensure_habit_valid(cursor, user_id, habit_id)
+        cursor.execute(
+            "UPDATE habits SET is_active = TRUE where habit_id = %s and is_active = FALSE;",
+            (habit_id,),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            print(f"No-op: Habit id#{habit_id} was already active.")  # server-side only
+        return {"message": f"Habit id#{habit_id} was reactivated."}
+    except psycopg2.Error as e:
+        raise HTTPException(
+            status_code=500, detail="Unable to reactivate habit due to database error"
+        )
+    finally:
+        cursor.close()
+        conn.close()
