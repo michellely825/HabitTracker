@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import users, habits
+from routers import users, habits, stats
 from database import get_connection
 import psycopg2
 
@@ -37,3 +37,4 @@ def health_check():
 
 app.include_router(users.router)
 app.include_router(habits.router)
+app.include_router(stats.router)
