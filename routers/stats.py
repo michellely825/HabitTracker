@@ -12,12 +12,12 @@ router = APIRouter()
 def get_stats(habit_id: int, request: Request):
     token = extract_token_from_header(request)
     user_id = verify_token(token)["user_id"]
-    ensure_habit_valid(cursor, user_id, habit_id)
 
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
+        ensure_habit_valid(cursor, user_id, habit_id)
         cursor.execute(
             "SELECT * FROM completions WHERE habit_id = %s ORDER BY completion_date ASC;",
             (habit_id,),
