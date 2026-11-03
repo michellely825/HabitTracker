@@ -87,7 +87,7 @@ def mark_habit_complete(habit_id: int, request: Request):
     try:
         ensure_habit_valid(cursor, user_id, habit_id)
         cursor.execute(
-            "INSERT INTO completions (habit_id) VALUES (%s) RETURNING completion_id;",
+            "INSERT INTO completions (habit_id) VALUES (%s);",
             (habit_id,),
         )
         conn.commit()
